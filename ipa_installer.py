@@ -262,6 +262,7 @@ async def log_device(device_serial=None, output_file=None, filter_text=None):
             out_file.flush()
             out_file.close()
         print(f"\n已捕获 {line_count} 行日志。")
+        print(f"日志文件: {os.path.abspath(output_file)}")
 
 
 def main():
