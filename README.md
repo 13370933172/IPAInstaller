@@ -2,7 +2,7 @@
 
 ## 简介
 
-IPAInstaller 是一个 Windows 端的 IPA 安装工具，可以将 `.ipa` 文件直接安装到 iOS 设备上。它是一个**单文件绿色软件**，无需安装 Python 或任何依赖，下载即用。
+IPAInstaller 是一个 Windows 端的 iOS 设备管理工具，支持将 `.ipa` 文件直接安装到 iOS 设备，以及**实时查看 iOS 设备系统日志**。它是一个**单文件绿色软件**，无需安装 Python 或任何依赖，下载即用。
 
 ---
 
@@ -119,6 +119,67 @@ IPA 信息:
 应用 '微信' 已安装到设备。
 ```
 
+### 3.5 实时查看 iOS 设备系统日志
+
+连接设备后，可以实时查看设备的系统日志，方便调试和排查问题。
+
+**基本用法（查看所有日志）：**
+
+```bash
+IPAInstaller.exe log
+```
+
+**过滤指定关键词：**
+
+```bash
+IPAInstaller.exe log --filter "MyApp"
+# 或使用短参数
+IPAInstaller.exe log -f "MyApp"
+```
+
+**将日志保存到指定文件：**
+
+```bash
+IPAInstaller.exe log --output mylog.log
+# 或使用短参数
+IPAInstaller.exe log -o mylog.log
+```
+
+> 不指定 `--output` 时，日志会自动保存到 `iOS_日期/iOS_日期时间.log` 文件中。
+
+**指定设备（多设备时）：**
+
+```bash
+IPAInstaller.exe log --udid 00008020-0015503826D2002E
+# 或使用短参数
+IPAInstaller.exe log -u 00008020-0015503826D2002E
+```
+
+**组合使用：**
+
+```bash
+IPAInstaller.exe log -f "error" -o error.log -u 00008020-0015503826D2002E
+```
+
+输出示例：
+
+```
+============================================================
+# iOS Log session started at 2026-06-18 17:10:00
+# Device: 00008020-0015503826D2002E
+============================================================
+
+设备名称: SDK-XR
+系统版本: iOS 18.7.2
+开始捕获实时日志... (过滤: error)
+按 Ctrl+C 停止
+
+2026-06-18 17:10:01 SpringBoard[34] <ERROR>: ...
+2026-06-18 17:10:03 backboardd[68] <ERROR>: ...
+```
+
+> 按 `Ctrl+C` 可以随时停止日志捕获。
+
 ---
 
 ## 四、命令速查
@@ -130,6 +191,10 @@ IPA 信息:
 | `IPAInstaller.exe install <ipa路径>` | 安装 IPA 到唯一连接的设备 |
 | `IPAInstaller.exe install <ipa路径> -u <UDID>` | 安装到指定设备 |
 | `IPAInstaller.exe install <ipa路径> -r` | 先卸载再安装 |
+| `IPAInstaller.exe log` | 实时查看 iOS 设备系统日志 |
+| `IPAInstaller.exe log -f <关键词>` | 过滤包含关键词的日志 |
+| `IPAInstaller.exe log -o <文件路径>` | 将日志保存到指定文件 |
+| `IPAInstaller.exe log -u <UDID>` | 查看指定设备的日志 |
 | `IPAInstaller.exe --help` | 查看帮助信息 |
 
 ---
@@ -176,6 +241,15 @@ IPA 信息:
 
 **不需要。** 本工具通过苹果官方的 USB 通信协议与设备交互，无需越狱。
 
+### Q7: 日志功能有什么用途？
+
+**典型场景：**
+
+- **调试应用崩溃**：用 `log -f "MyApp"` 过滤自家应用的日志，查看崩溃原因
+- **排查安装失败**：安装 IPA 时同时开一个终端运行 `log -f "installd"`，查看系统安装守护进程的日志
+- **分析性能问题**：保存全量日志 `log -o full.log` 后离线分析
+- **开发调试**：实时查看应用的 `NSLog` / `print` 输出
+
 ---
 
 ## 六、进阶技巧
@@ -221,6 +295,15 @@ IPAInstaller info C:\Users\xxx\Downloads\app.ipa
 ```
 
 > **提示**：如果觉得 `IPAInstaller` 名称太长，可以将 `IPAInstaller.exe` 重命名为 `ipa.exe`，之后用 `ipa list`、`ipa install` 等命令操作。
+
+### 6.5 安装时同步查看日志
+
+安装 IPA 时，可以同时打开两个 `cmd` 窗口：
+
+- **窗口 1**：执行安装命令
+- **窗口 2**：运行 `IPAInstaller log -f "installd"` 实时监控安装进度
+
+这样可以快速定位安装失败的原因。
 
 ---
 

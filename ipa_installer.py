@@ -4,6 +4,8 @@ import os
 import sys
 import zipfile
 import plistlib
+import posixpath
+from datetime import datetime
 from pathlib import Path
 
 from pymobiledevice3.lockdown import create_using_usbmux
@@ -167,6 +169,101 @@ async def install_ipa(ipa_path, device_serial=None, uninstall_existing=False):
         return False
 
 
+def format_log_line(entry):
+    timestamp = entry.timestamp
+    pid = entry.pid
+    level = entry.level.name
+    filename = entry.filename
+    image_name = posixpath.basename(entry.image_name) if entry.image_name else ""
+    message = entry.message
+    process_name = posixpath.basename(filename) if filename else ""
+
+    if image_name:
+        return f"{timestamp} {process_name}({image_name})[{pid}] <{level}>: {message}"
+    else:
+        return f"{timestamp} {process_name}[{pid}] <{level}>: {message}"
+
+
+async def log_device(device_serial=None, output_file=None, filter_text=None):
+    from pymobiledevice3.services.os_trace import OsTraceService
+
+    devices = await list_devices()
+    if not devices:
+        print("错误: 未检测到已连接的 iOS 设备。")
+        return
+
+    if device_serial:
+        target_device = None
+        for d in devices:
+            if d.serial == device_serial:
+                target_device = d
+                break
+        if not target_device:
+            print(f"错误: 未找到 UDID 为 {device_serial} 的设备。")
+            return
+    else:
+        target_device = devices[0]
+        if len(devices) > 1:
+            print(f"检测到多台设备，默认使用第一台: {target_device.serial}")
+            print("可使用 --udid 参数指定设备")
+
+    try:
+        lockdown = await create_using_usbmux(serial=target_device.serial)
+    except Exception as e:
+        print(f"错误: 无法连接到设备: {e}")
+        return
+
+    device_name = lockdown.all_values.get("DeviceName", "未知设备")
+    ios_version = lockdown.all_values.get("ProductVersion", "未知")
+    print(f"\n设备名称: {device_name}")
+    print(f"系统版本: iOS {ios_version}")
+
+    if output_file is None:
+        output_file = f"iOS_{datetime.now().strftime('%Y%m%d')}/iOS_{datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+    os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
+
+    line_count = 0
+    out_file = None
+
+    try:
+        out_file = open(output_file, 'a', encoding='utf-8')
+
+        separator = f"\n{'=' * 60}\n# iOS Log session started at {datetime.now()}\n# Device: {target_device.serial}\n{'=' * 60}\n"
+        out_file.write(separator)
+        out_file.flush()
+        print(separator, end='')
+
+        os_trace = OsTraceService(lockdown=lockdown)
+        print(f"开始捕获实时日志... (过滤: {filter_text or '无'})")
+        print("按 Ctrl+C 停止\n")
+
+        async for entry in os_trace.syslog():
+            line_str = format_log_line(entry)
+            if not line_str.endswith('\n'):
+                line_str += '\n'
+            if filter_text and filter_text.lower() not in line_str.lower():
+                continue
+            line_count += 1
+            sys.stdout.write(line_str)
+            sys.stdout.flush()
+            out_file.write(line_str)
+            out_file.flush()
+
+    except asyncio.CancelledError:
+        pass
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"\n错误: {e}")
+    finally:
+        end_mark = f"\n# iOS Log session ended at {datetime.now()}\n{'=' * 60}\n"
+        if out_file:
+            out_file.write(end_mark)
+            out_file.flush()
+            out_file.close()
+        print(f"\n已捕获 {line_count} 行日志。")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Windows iOS IPA 安装工具 - 在 Windows 上将 IPA 包安装到 iOS 设备",
@@ -178,6 +275,9 @@ def main():
   IPAInstaller.exe install app.ipa --udid <UDID>  安装到指定设备
   IPAInstaller.exe install app.ipa --uninstall    先卸载再安装
   IPAInstaller.exe info app.ipa            查看 IPA 包信息
+  IPAInstaller.exe log                     实时查看 iOS 设备系统日志
+  IPAInstaller.exe log -f "MyApp"          过滤包含 "MyApp" 的日志
+  IPAInstaller.exe log -o mylog.log        将日志保存到指定文件
         """,
     )
 
@@ -193,6 +293,11 @@ def main():
     install_parser.add_argument("--udid", "-u", help="目标设备的 UDID（多设备时必须指定）")
     install_parser.add_argument("--uninstall", "-r", action="store_true",
                                 help="安装前先卸载已存在的应用")
+
+    log_parser = subparsers.add_parser("log", help="实时查看 iOS 设备系统日志")
+    log_parser.add_argument("--udid", "-u", help="目标设备的 UDID（多设备时可选）")
+    log_parser.add_argument("--output", "-o", help="输出日志文件路径（默认自动生成）")
+    log_parser.add_argument("--filter", "-f", help="只显示包含该字符串的日志行（不区分大小写）")
 
     args = parser.parse_args()
 
@@ -223,6 +328,16 @@ def main():
         ))
         if not success:
             sys.exit(1)
+
+    elif args.command == "log":
+        try:
+            asyncio.run(log_device(
+                device_serial=args.udid,
+                output_file=args.output,
+                filter_text=args.filter,
+            ))
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == "__main__":
