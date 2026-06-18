@@ -200,6 +200,28 @@ pause
 
 右键 `IPAInstaller.exe` → 发送到 → 桌面快捷方式，方便快速使用。
 
+### 6.4 配置环境变量（全局使用）
+
+将 `IPAInstaller.exe` 所在目录添加到系统环境变量 `Path` 中，即可在任意位置通过 `cmd` 直接使用。
+
+**步骤：**
+
+1. 按 `Win + R`，输入 `sysdm.cpl` 并回车，打开 **系统属性**
+2. 点击 **高级** 选项卡 → **环境变量**
+3. 在 **系统变量** 中找到 `Path`，选中后点击 **编辑**
+4. 点击 **新建**，填入 `IPAInstaller.exe` 所在的文件夹路径（例如 `C:\Tools\IPAInstaller`）
+5. 依次点击 **确定** 保存所有窗口
+
+配置完成后，**重新打开 `cmd`**，即可在任何目录下直接使用：
+
+```bash
+IPAInstaller list
+IPAInstaller install C:\Users\xxx\Downloads\app.ipa
+IPAInstaller info C:\Users\xxx\Downloads\app.ipa
+```
+
+> **提示**：如果觉得 `IPAInstaller` 名称太长，可以将 `IPAInstaller.exe` 重命名为 `ipa.exe`，之后用 `ipa list`、`ipa install` 等命令操作。
+
 ---
 
 ## 七、注意事项
