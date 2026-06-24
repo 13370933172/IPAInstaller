@@ -15,10 +15,10 @@ echo [3/3] Building...
 pyinstaller --clean --noconfirm IPAInstaller.spec
 
 echo.
-if exist "dist\IPAInstaller.exe" (
+if exist "dist\ipa.exe" (
     echo ========================================
     echo   Build Success!
-    echo   Output: dist\IPAInstaller.exe
+    echo   Output: dist\ipa.exe
     echo ========================================
 ) else (
     echo Build failed, please check the error messages above.

@@ -270,15 +270,15 @@ def main():
         description="Windows iOS IPA 安装工具 - 在 Windows 上将 IPA 包安装到 iOS 设备",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-使用示例:
-  IPAInstaller.exe list                    列出已连接的设备
-  IPAInstaller.exe install app.ipa         安装 IPA 到唯一连接的设备
-  IPAInstaller.exe install app.ipa --udid <UDID>  安装到指定设备
-  IPAInstaller.exe install app.ipa --uninstall    先卸载再安装
-  IPAInstaller.exe info app.ipa            查看 IPA 包信息
-  IPAInstaller.exe log                     实时查看 iOS 设备系统日志
-  IPAInstaller.exe log -f "MyApp"          过滤包含 "MyApp" 的日志
-  IPAInstaller.exe log -o mylog.log        将日志保存到指定文件
+使用示例(已配置到环境变量则无需“.exe”):
+  ipa.exe list                    列出已连接的设备
+  ipa.exe install app.ipa         安装 IPA 到唯一连接的设备
+  ipa.exe install app.ipa --udid <UDID>  安装到指定设备
+  ipa.exe install app.ipa --uninstall    先卸载再安装
+  ipa.exe info app.ipa            查看 IPA 包信息
+  ipa.exe log                     实时查看 iOS 设备系统日志
+  ipa.exe log -f "MyApp"          过滤包含 "MyApp" 的日志
+  ipa.exe log -o mylog.log        将日志保存到指定文件
         """,
     )
 
